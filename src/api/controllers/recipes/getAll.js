@@ -1,11 +1,11 @@
 const { StatusCodes } = require('http-status-codes');
-const getAll = require('../../services/recipes/getAll');
+const Services = require('../../services/recipes');
 
 module.exports = async (req, res) => {
   try {
     const token = req.headers.authorization;
 
-    const recipes = await getAll();
+    const recipes = await Services.getAll();
     if (!token || token) {
       return res.status(StatusCodes.OK).json(recipes);
     }

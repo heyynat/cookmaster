@@ -1,4 +1,4 @@
-const Model = require('../models/user');
+const Model = require('../../models/user');
 
 module.exports = async (email, password) => {
   try {

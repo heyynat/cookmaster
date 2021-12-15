@@ -1,12 +1,12 @@
 const { StatusCodes } = require('http-status-codes');
-const getById = require('../../services/recipes/getById');
+const Services = require('../../services/recipes');
 
 module.exports = async (req, res) => {
   try {
     const token = req.headers.authorization;
     const { id } = req.params;
 
-    const recipe = await getById(id);
+    const recipe = await Services.getById(id);
     if (recipe.message) {
       return res.status(StatusCodes.NOT_FOUND).json(recipe);
     }

@@ -1,11 +1,11 @@
 const { StatusCodes } = require('http-status-codes');
-const createUser = require('../services/createUser');
+const Services = require('../../services/users');
 
 module.exports = async (req, res) => {
   try {
     const { name, email, password } = req.body;
     const newUser = { name, email, password };
-    const user = await createUser(newUser);
+    const user = await Services.create(newUser);
     const { STATUSCODE } = user;
 
     if (user.message) {

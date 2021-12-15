@@ -1,6 +1,6 @@
 const { StatusCodes } = require('http-status-codes');
 const jwt = require('jsonwebtoken');
-const Model = require('../models/user');
+const Model = require('../../models/user');
 
 const secret = 'seusecretdetoken';
 const jwtConfig = {

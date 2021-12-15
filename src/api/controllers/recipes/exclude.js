@@ -1,10 +1,10 @@
 const { StatusCodes } = require('http-status-codes');
-const exclude = require('../../services/recipes/exclude');
+const Services = require('../../services/recipes');
 
 module.exports = async (req, res) => {
   try {
     const { id } = req.params;
-    const recipeExcluded = await exclude(id);
+    const recipeExcluded = await Services.exclude(id);
     return res.status(StatusCodes.NO_CONTENT).json(recipeExcluded);
   } catch (err) {
     res

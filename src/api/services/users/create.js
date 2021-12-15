@@ -1,5 +1,5 @@
 const Joi = require('joi');
-const Model = require('../models/user');
+const Model = require('../../models/user');
 
 module.exports = async (newUser) => {
   const emailExist = await Model.findEmailOfUser(newUser.email);
