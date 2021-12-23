@@ -7,7 +7,6 @@ module.exports = async (email, password) => {
     if (!user || user.password !== password) {
       return { STATUSCODE: 'UNAUTHORIZED', message: 'Incorrect username or password' };
     }
-
     return user;
   } catch (error) {
     return error;

@@ -1,25 +1,11 @@
 const { StatusCodes } = require('http-status-codes');
-const multer = require('multer');
-const Model = require('../../models/recipes');
+const Services = require('../../services/recipes');
 
 module.exports = async (req, res) => {
-try {
-  const { id } = req.params;
-  
-  const storage = multer.diskStorage({
-    destination: (callback) => {
-      callback(null, 'uploads');
-    },
-    filename: (callback) => {
-      callback(null, `${id}.jpeg`);
-    } });
+  try {
+    const { id } = req.params;
+    const recipe = await Services.image(id);
     
-    const upload = multer({ storage });
-    
-    upload.single('file');
-
-    const newRecipe = { image: `localhost:3000/src/uploads/${id}.jpeg` };
-    const recipe = await Model.update(id, newRecipe);
     return res.status(StatusCodes.OK).json(recipe);
   } catch (err) {
     res
