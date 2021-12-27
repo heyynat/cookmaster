@@ -10,7 +10,7 @@ module.exports = async (newUser) => {
     }).validate(newUser);
     const { name, email, password } = newUser;
     const adminCreated = await Model.createAdm(name, email, password);
-    if (error) return { STATUSCODE: 'FORBIDDEN', message: 'Only admins can register new admins' };
+    if (error) return { STATUSCODE: 'BAD_REQUEST', message: 'Invalid entries. Try again.' };
     return adminCreated;
   } catch (error) {
     return error;

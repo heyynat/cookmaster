@@ -4,7 +4,7 @@ const chaiHttp = require('chai-http');
 const { MongoClient } = require('mongodb');
 const jwt = require('jsonwebtoken');
 
-const server = require('../api/server');
+const server = require('../api/app');
 const connection = require('../api/models/connection');
 
 const { expect } = chai;
@@ -16,6 +16,7 @@ describe('POST - Users', () => {
   before(async () => {
     connectionMock = await (await connection());
     await connectionMock.collection('users').deleteMany({});
+    await connectionMock.collection('users').insertOne({ name: 'Admin Master', email: 'masteradmin@gmail.com', password: 'admin123', role: 'admin' });
     sinon.stub(MongoClient, 'connect').resolves(connectionMock);
   });
   
@@ -55,7 +56,47 @@ describe('POST - Users', () => {
       expect(response.body.user.role).to.be.equal('user');
       expect(response.body.user).not.to.have.property('password');
     });
-  });  
+  });
+
+  describe('Quando Admin é criado com sucesso', () => {
+    let response;
+      before(async () => {   
+        const token = await chai.request(server)
+        .post('/login')
+        .send({
+          email: 'masteradmin@gmail.com',
+          password: 'admin123'
+        }).then((res) => res.body.token);
+        response = await chai.request(server)
+        .post('/users/admin')
+        .send({
+          name: 'Admin',
+          email: 'admin@root.com',
+          password: 'senha123'
+        }).set('authorization', token);
+      });
+    
+    it('retorna o código de status 201', () => {
+      expect(response).to.have.status(201);
+    });
+    
+    it('retorna um objeto', () => {
+      expect(response.body).to.be.a('object');
+    });
+    
+    it('o objeto possui a propriedade "user"', () => {
+      expect(response.body).to.have.property('user');
+    });
+    
+    it('a propriedade "user" deve possuir um objeto contendo "_id", "name", "email" e "role"',
+    () => {
+      expect(response.body.user).to.have.property('_id');
+      expect(response.body.user.name).to.be.equal('Admin');
+      expect(response.body.user.email).to.be.equal('admin@root.com');
+      expect(response.body.user.role).to.be.equal('admin');
+      expect(response.body.user).not.to.have.property('password');
+    });
+  });
 });
 
 describe('POST - Login', () => {
@@ -266,6 +307,230 @@ describe('POST - Recipes', () => {
       expect(response.body.recipe.name).to.be.equal('Macarronada Especial');
       expect(response.body.recipe.ingredients).to.be.equal('Molho, Macarrão, Queijo, Almôndegas e Bacon');
       expect(response.body.recipe.preparation).to.be.equal('Ferver água á 150°');
+    });
+  });
+});
+
+describe('GET - Recipes', () => {
+  let connectionMock;
+  before(async () => {
+    connectionMock = await (await connection());
+    await connectionMock.collection('users').deleteMany({});
+    await connectionMock.collection('recipes').deleteMany({});
+    sinon.stub(MongoClient, 'connect').resolves(connectionMock);
+  });
+  
+  after(() => {
+    MongoClient.connect.restore();
+  });
+  
+  describe('Quando recipes é buscado com sucesso', () => {
+    let response;
+    before(async () => {   
+      response = await chai.request(server)
+      .post('/users')
+      .send({
+        name: 'Mary Jane',
+        email: 'maryjanezinha@gmail.com',
+        password: '12345678'
+      });
+      const token = await chai.request(server)
+      .post('/login')
+      .send({
+        email: 'maryjanezinha@gmail.com',
+        password: '12345678'
+      }).then((res) => res.body.token);
+      response = await chai.request(server)
+      .post('/recipes')
+      .send({
+        name: 'Macarronada Especial',
+        ingredients: 'Molho, Macarrão, Queijo, Almôndegas e Bacon',
+        preparation: 'Ferver água á 150°'
+      }).set('authorization', token);
+      response = await chai.request(server)
+      .post('/recipes')
+      .send({
+        name: 'Lasanha',
+        ingredients: 'Molho, Massa, Queijo e Carne Moída',
+        preparation: 'Ferver água á 150° e assar á 200°'
+      }).set('authorization', token);
+      response = await chai.request(server)
+      .get('/recipes')
+      .send().set('authorization', token);
+    });
+    
+    it('retorna o código de status 200', () => {
+      expect(response).to.have.status(200);
+    });
+    
+    it('retorna um array', () => {
+      expect(response.body).to.be.a('array');
+    });
+
+    it('retorna um array contendo 2 objetos', () => {
+      expect(response.body.length).to.be.equal(2);
+    });
+    
+    it('o array retornado deve possuir dois objeto contendo "_id", "name", "ingredients", "preparation" e "userId"',
+    () => {
+      expect(response.body[0]).to.have.property('_id');
+      expect(response.body[0]).to.have.property('userId');
+      expect(response.body[0].name).to.be.equal('Macarronada Especial');
+      expect(response.body[0].ingredients).to.be.equal('Molho, Macarrão, Queijo, Almôndegas e Bacon');
+      expect(response.body[0].preparation).to.be.equal('Ferver água á 150°');
+
+      expect(response.body[1]).to.have.property('_id');
+      expect(response.body[1]).to.have.property('userId');
+      expect(response.body[1].name).to.be.equal('Lasanha');
+      expect(response.body[1].ingredients).to.be.equal('Molho, Massa, Queijo e Carne Moída');
+      expect(response.body[1].preparation).to.be.equal('Ferver água á 150° e assar á 200°');
+    });
+  });
+
+  describe('Quando uma recipe em específico é buscado com sucesso', () => {
+    let response;
+    let connectionMock;
+    before(async () => {
+      connectionMock = await (await connection());
+      response = await chai.request(server)
+      .post('/users')
+      .send({
+        name: 'Mary Jane',
+        email: 'maryjanezinha@gmail.com',
+        password: '12345678'
+      });
+      const token = await chai.request(server)
+      .post('/login')
+      .send({
+        email: 'maryjanezinha@gmail.com',
+        password: '12345678'
+      }).then((res) => res.body.token);
+      response = await chai.request(server)
+      .post('/recipes')
+      .send({
+        name: 'Macarronada Especial',
+        ingredients: 'Molho, Macarrão, Queijo, Almôndegas e Bacon',
+        preparation: 'Ferver água á 150°'
+      }).set('authorization', token);
+      
+      const { _id } = await connectionMock.collection('recipes').findOne({ name: 'Macarronada Especial' });
+      response = await chai.request(server)
+      .get(`/recipes/${_id}`)
+      .send().set('authorization', token);
+    });
+    
+    it('retorna o código de status 200', () => {
+      expect(response).to.have.status(200);
+    });
+    
+    it('retorna um objet', () => {
+      expect(response.body).to.be.a('object');
+    });
+    
+    it('o objeto retornado deve conter "_id", "name", "ingredients", "preparation" e "userId"',
+    () => {
+      expect(response.body).to.have.property('_id');
+      expect(response.body).to.have.property('userId');
+      expect(response.body.name).to.be.equal('Macarronada Especial');
+      expect(response.body.ingredients).to.be.equal('Molho, Macarrão, Queijo, Almôndegas e Bacon');
+      expect(response.body.preparation).to.be.equal('Ferver água á 150°');
+    });
+  });
+});
+
+describe('DELETE - Recipes', () => {
+  let connectionMock;
+  before(async () => {
+    connectionMock = await (await connection());
+    await connectionMock.collection('users').deleteMany({});
+    await connectionMock.collection('recipes').deleteMany({});
+    sinon.stub(MongoClient, 'connect').resolves(connectionMock);
+  });
+  
+  after(() => {
+    MongoClient.connect.restore();
+  });
+
+  describe('Quando uma recipe em específico é deletada com sucesso', () => {
+    let response;
+    let connectionMock;
+    before(async () => {
+      connectionMock = await (await connection());
+      response = await chai.request(server)
+      .post('/users')
+      .send({
+        name: 'Mary Jane',
+        email: 'maryjanezinha@gmail.com',
+        password: '12345678'
+      });
+      const token = await chai.request(server)
+      .post('/login')
+      .send({
+        email: 'maryjanezinha@gmail.com',
+        password: '12345678'
+      }).then((res) => res.body.token);
+      response = await chai.request(server)
+      .post('/recipes')
+      .send({
+        name: 'Macarronada Especial',
+        ingredients: 'Molho, Macarrão, Queijo, Almôndegas e Bacon',
+        preparation: 'Ferver água á 150°'
+      }).set('authorization', token);
+      
+      const { _id } = await connectionMock.collection('recipes').findOne({ name: 'Macarronada Especial' });
+      response = await chai.request(server)
+      .delete(`/recipes/${_id}`)
+      .send().set('authorization', token);
+    });
+    
+    it('retorna o código de status 204', () => {
+      expect(response).to.have.status(204);
+    });
+  });
+});
+
+describe('PUT - Recipes', () => {
+  let connectionMock;
+  before(async () => {
+    connectionMock = await (await connection());
+    await connectionMock.collection('users').insertOne({        name: 'Mary Jane',
+    email: 'maryjanezinha@gmail.com',
+    password: '12345678' });
+    await connectionMock.collection('recipes').insertOne({
+      name: 'Macarronada Especial',
+      ingredients: 'Molho, Macarrão, Queijo, Almôndegas e Bacon',
+      preparation: 'Ferver água á 150°'
+    });
+    sinon.stub(MongoClient, 'connect').resolves(connectionMock);
+  });
+  
+  after(() => {
+    MongoClient.connect.restore();
+  });
+
+  describe('Quando uma recipe em específico é deletada com sucesso', () => {
+    let response;
+    let connectionMock;
+    before(async () => {
+      connectionMock = await (await connection());
+      const token = await chai.request(server)
+      .post('/login')
+      .send({
+        email: 'maryjanezinha@gmail.com',
+        password: '12345678'
+      }).then((res) => res.body.token);
+      response = await chai.request(server)
+      .post('/recipes')
+      .send().set('authorization', token);
+
+      const { _id } = await connectionMock.collection('recipes').findOne({ name: 'Macarronada Especial' });
+      response = await chai.request(server)
+      .put(`/recipes/${_id}`)
+      .send().set('authorization', token);
+    });
+    
+    it('retorna o código de status 200', () => {
+      expect(response).to.have.status(200);
     });
   });
 });
