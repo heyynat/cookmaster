@@ -9,9 +9,6 @@ module.exports = async (req, res) => {
     if (!token || token) {
       return res.status(StatusCodes.OK).json(recipes);
     }
-    if (!recipes) {
-      return res.status(StatusCodes.NOT_FOUND).json(recipes);
-    }
   } catch (err) {
     res
     .status(StatusCodes.INTERNAL_SERVER_ERROR)

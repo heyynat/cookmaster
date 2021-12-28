@@ -1,5 +1,6 @@
 const express = require('express');
 const authAdmin = require('./auth/authAdmin');
+const admin = require('./auth/admin');
 const validateJWT = require('./auth/validateJWT');
 const Recipes = require('./controllers/recipes');
 const Users = require('./controllers/users');
@@ -14,7 +15,7 @@ app.get('/', (request, response) => {
 });
 
 app.post('/users', Users.create);
-app.post('/users/admin', authAdmin, Users.createAdm);
+app.post('/users/admin', admin, Users.createAdm);
 app.post('/login', Users.login);
 
 app.post('/recipes', validateJWT, Recipes.create);

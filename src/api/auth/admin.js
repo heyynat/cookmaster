@@ -16,7 +16,7 @@ module.exports = async (req, res, next) => {
     
     const user = await Model.findUser(decoded.data.name);
     
-    if (!user || user.role !== 'admin') {
+    if (user.role !== 'admin') {
       return res
       .status(StatusCodes.FORBIDDEN)
       .json({ message: 'Only admins can register new admins' });
